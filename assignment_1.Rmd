@@ -10,7 +10,7 @@ output:
 # Stack age and weight vectors into a data frame (matrix) baby_girl
 weight <- c(2.99, 3.04, 3.23, 3.60, 3.98, 4.50, 4.60, 4.95, 5.05, 5.35, 5.62, 5.95, 6.09, 6.28, 6.69)
 age <- c(1, 2, 3, 5, 6, 9, 10, 11, 12, 13, 14, 16, 17, 20, 22)
-baby_girl = data.frame(age, weight)
+baby_girl <- data.frame(age, weight)
 ```
 
 ```{r}
@@ -18,9 +18,10 @@ baby_girl = data.frame(age, weight)
 plot(baby_girl$age, baby_girl$weight,
      xlab = "Age in weeks", ylab = "Weight in kilograms", 
      main = "Weight (kg) against Age (weeks) of a Baby Girl")
-baby.lm = lm(weight ~ age, data = baby_girl)
-abline(simple_linear_regr_model$coefficient)
-summary(simple_linear_regr_model)
+baby.lm <- lm(weight ~ age, data = baby_girl)
+abline(baby.lm$coefficient, col = "red")
+# lines(age, predict(baby.lm), col = "red")
+summary(baby.lm)
 ```
 
 ```{r}
@@ -42,6 +43,11 @@ baby_girl$age_square <- age * age
 baby.lm2 <- lm(weight ~ age + age_square, data = baby_girl)
 summary(baby.lm2)
 plot(baby.lm2)
+plot(baby_girl$age, baby_girl$weight,
+     xlab = "Age in weeks", ylab = "Weight in kilograms", 
+     main = "Weight (kg) against Age (weeks) of a Baby Girl")
+lines(age, predict(baby.lm2), col = "red")
+
 # From the summary statistics we can see that the R^2 is even higher when including the age squared variable, although the p-value for the individual age sqaured variable is not as small (> 0.01) the intercept and the orignal age variable (both close to 0). We can also not that the F-statistic has decreased from 963 to 802 when adding the extra quadratic term. 
 
 # The residual plot does look a little bit better after including the quadratic term as the residuals are more randomly scattered and with a fairly constant variance. The normal qq plot also indicate a slighly more normal distribution of the residuals. 
@@ -54,6 +60,10 @@ baby_girl$age_cubic <- age * age * age
 baby.lm3 <- lm(weight ~ age + age_square + age_cubic, data = baby_girl)
 summary(baby.lm3)
 plot(baby.lm3)
+plot(baby_girl$age, baby_girl$weight,
+     xlab = "Age in weeks", ylab = "Weight in kilograms", 
+     main = "Weight (kg) against Age (weeks) of a Baby Girl")
+lines(age, predict(baby.lm3), col = "red")
 
 # Although the adjusted R^2 has gone up to 0.9944, the significance of each individual term has decreased where the quadratic term now has a p-value > 0.05 indicating that we cannot reject the null-hypothesis for this variable. The cubic term is also not as significant with a p-value of 0.0192 which may not be low enough to reject the null hypothesis for the cubic term either. The overall p-value is very small and the F-statistic stay fairly high.
 
