@@ -63,7 +63,7 @@ beta <- coef(model.lasso)
 # optimal?
 colors <- rainbow(5)
 matplot(lambda.lasso, beta, xlim=c(8,-2), type="o", pch=20, xlab=expression(lambda), 
-        ylab=expression(hat(beta)), col=colors)
+        ylab=expression(hat(beta)), col=colors, main = "Coefficients for various lambda")
 text(rep(-0, 5), beta[5,], colnames(x), pos=4, col=colors)
 abline(v=lambda.lasso[4], lty=2)
 abline(h=0, lty=2)
@@ -95,3 +95,56 @@ scope <- list(upper=~cg + cd + od + x, lower=~.)
 model.forward <- step(lm(y ~ 1, data=steam), scope, direction="forward")
 rss.forward <- sum(model.forward$resid^2)/model.forward$df.residual
 ```
+
+```{r}
+# Compare models
+rss.ridge
+rss.lasso
+rss.backward
+rss.forward
+```
+
+
+```{r}
+# (b) Improve model further
+
+model.ridge2 <- lm.ridge(y ~ cd + od + x , data = steam, lambda = seq(0,10,0.1))
+
+lambda.ridge2 <- seq(0,10,0.1)[which.min(model.ridge2$GCV)]
+beta.ridge2 <- coef(model.ridge2)[which.min(model.ridge2$GCV),]
+
+# Include the intercept term in the design matrix
+ones <- rep(1, 25)
+design_matrix <- data.frame(ones, steam[,3:5])
+resid.ridge2 <- steam$y - as.matrix(design_matrix)%*%beta.ridge2
+
+
+# To find the degrees of freedom for this model is a little complicated, but for 
+# comparison purposes, this is how we do it in R.
+d <- svd(as.matrix(steam[,3:5]))$d
+df <- 25 - sum(d^2/(lambda.ridge2+d^2))
+
+# Residual sum of sqaures with 22 degrees of freedom
+rss.ridge2 <- sum(resid.ridge2^2)/df
+```
+
+```{r}
+# (c) Find a 95 % confidence interval
+steam.predict_ridge <- predict(
+  model.backward,
+  data.frame(
+    cg = 0.7,
+    cd = 30,
+    od = 20,
+    x = 52.6
+  ),
+  interval = "confidence"
+)
+```
+
+
+
+
+
+
+
