@@ -1,0 +1,97 @@
+---
+title: "Assignment 1-2"
+output: html_notebook
+---
+
+```{r}
+steam <- read.table("steam.txt", header = TRUE)
+```
+
+```{r}
+pairs(~y + cg + cd + od + x,  data = steam)
+pairs(~log(y) + cg + cd + od + x,  data = steam)
+```
+
+```{r}
+# Simple linear regression
+steam.lm <- lm(y ~ cg + cd + od + x, data = steam)
+summary(steam.lm)
+```
+
+
+```{r}
+# Ridge regression
+library(MASS)
+model.ridge <- lm.ridge(y ~ ., data = steam, lambda = seq(0,10,0.1))
+
+# Plot to see the optimal value(s) for lambda
+plot(seq(0,10,0.1), model.ridge$GCV, main="GCV of Ridge Regression", type="l", 
+     xlab=expression(lambda), ylab="GCV")
+
+# Optimal value for lambda
+lambda.ridge <- seq(0,10,0.1)[which.min(model.ridge$GCV)]
+
+beta.ridge <- coef(model.ridge)[which.min(model.ridge$GCV),]
+resid.ridge <- steam$y - beta.ridge[1] - as.matrix(steam[,2:5])%*%beta.ridge[2:5]
+
+# Include the intercept term in the design matrix
+ones <- rep(1, 25)
+design_matrix <- data.frame(ones, steam[,2:5])
+resid.ridge_dm <- steam$y - as.matrix(design_matrix)%*%beta.ridge
+
+# To find the degrees of freedom for this model is a little complicated, but for 
+# comparison purposes, this is how we do it in R.
+d <- svd(as.matrix(steam[,2:5]))$d
+df <- 25 - sum(d^2/(lambda.ridge+d^2))
+
+# Residual sum of sqaures with 22 degrees of freedom
+rss.ridge <- sum(resid.ridge^2)/df
+```
+
+```{r}
+# LASSO Regression
+library(lars)
+
+y <- as.numeric(steam[,1])
+x <- as.matrix(steam[,2:5])
+model.lasso <- lars(x, y, type="lasso")
+lambda.lasso <- c(model.lasso$lambda, 0)
+beta <- coef(model.lasso)
+
+# The below will plot the values of the coefficients for various lambda. Again the 
+# optimal is higlightede by the dashed line. Can you tell why it is likely to be 
+# optimal?
+colors <- rainbow(5)
+matplot(lambda.lasso, beta, xlim=c(8,-2), type="o", pch=20, xlab=expression(lambda), 
+        ylab=expression(hat(beta)), col=colors)
+text(rep(-0, 5), beta[5,], colnames(x), pos=4, col=colors)
+abline(v=lambda.lasso[4], lty=2)
+abline(h=0, lty=2)
+
+# We choose to keep the lamda = 1.205 and its coefficients
+
+beta.lasso <- beta[4,]
+resid.lasso <- steam$y - predict(model.lasso, as.matrix(steam[,2:5]), s=4, type="fit")$fit
+rss.lasso <- sum(resid.lasso^2)/(25-4)
+```
+
+```{r}
+# Backward stepwise regression
+model.ls <- lm(y ~ cg + cd + od + x, data = steam)
+# Residual sum of squares (this will allow us to compare models)
+rss.ls <- sum(model.ls$resid^2)/model.ls$df.residual
+
+model.backward <- step(model.ls, direction="backward")
+rss.backward <- sum(model.backward$resid^2)/model.backward$df.residual
+```
+
+```{r}
+# Forward stepwise regression
+# We can now compare forward selection with AIC. Note the scope command tells you what 
+# parameters we may put into our model, and we need to define this for forward 
+# stepwise selection.
+
+scope <- list(upper=~cg + cd + od + x, lower=~.)
+model.forward <- step(lm(y ~ 1, data=steam), scope, direction="forward")
+rss.forward <- sum(model.forward$resid^2)/model.forward$df.residual
+```
